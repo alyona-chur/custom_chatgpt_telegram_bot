@@ -11,3 +11,8 @@ enable_message_streaming: true  # if set, messages will be shown to user word-by
 chatgpt_price_per_1000_tokens: 0.002
 gpt_price_per_1000_tokens: 0.02
 whisper_price_per_1_min: 0.006
+
+long_dialogs_for_custom_mode:
+  enable: true
+  max_tokens: 1000
+  update_summary_when_tokens_reached: 500

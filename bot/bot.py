@@ -182,6 +182,11 @@ async def retry_handle(update: Update, context: CallbackContext):
 
 
 async def message_handle(update: Update, context: CallbackContext, message=None, use_new_dialog_timeout=True):
+    user_id = update.message.from_user.id
+    chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
+    use_new_dialog_timeout = True \
+        if chat_mode == "custom" and config.custom_mode_long_dialogs_config.enable else use_new_dialog_timeout
+
     # check if bot was mentioned (for group chats)
     if not await is_bot_mentioned(update, context):
         return
@@ -199,9 +204,6 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
 
     await register_user_if_not_exists(update, context, update.message.from_user)
     if await is_previous_message_not_answered_yet(update, context): return
-
-    user_id = update.message.from_user.id
-    chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
 
     if chat_mode == "artist":
         await generate_image_handle(update, context, message=message)

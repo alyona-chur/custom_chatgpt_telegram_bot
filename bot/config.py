@@ -2,6 +2,14 @@ import yaml
 import dotenv
 from pathlib import Path
 
+
+class CustomModeLongDialogConfiguration:
+    def __init__(self, config_data):
+        self.enable = config_data['enable']
+        self.max_tokens = config_data['max_tokens']
+        self.update_summary_when_tokens_reached = config_data['update_summary_when_tokens_reached']
+
+
 config_dir = Path(__file__).parent.parent.resolve() / "config"
 
 # load yaml config
@@ -18,6 +26,7 @@ openai_api_base = config_yaml.get("openai_api_base", None)
 allowed_telegram_usernames = config_yaml["allowed_telegram_usernames"]
 new_dialog_timeout = config_yaml["new_dialog_timeout"]
 enable_message_streaming = config_yaml.get("enable_message_streaming", True)
+custom_mode_long_dialogs_config = CustomModeLongDialogConfiguration(config_yaml['long_dialogs_for_custom_mode'])
 return_n_generated_images = config_yaml.get("return_n_generated_images", 1)
 n_chat_modes_per_page = config_yaml.get("n_chat_modes_per_page", 5)
 mongodb_uri = f"mongodb://mongo:{config_env['MONGODB_PORT']}"
