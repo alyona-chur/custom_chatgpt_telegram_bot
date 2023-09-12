@@ -33,10 +33,12 @@ from telegram.constants import ParseMode, ChatAction
 import config
 import database
 import openai_utils
+import user_state
 
 
 # setup
 db = database.Database()
+states = {}
 logger = logging.getLogger(__name__)
 
 user_semaphores = {}
@@ -110,6 +112,11 @@ async def register_user_if_not_exists(update: Update, context: CallbackContext, 
     # image generation
     if db.get_user_attribute(user.id, "n_generated_images") is None:
         db.set_user_attribute(user.id, "n_generated_images", 0)
+
+    if user.id not in states:
+        states[user.id] = user_state.UserState(user.id)
+    else:
+        states[user.id].clear()
 
 
 async def is_bot_mentioned(update: Update, context: CallbackContext):
@@ -238,14 +245,15 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 "markdown": ParseMode.MARKDOWN
             }[config.chat_modes[chat_mode]["parse_mode"]]
 
-            chatgpt_instance = openai_utils.ChatGPT(model=current_model)
+            chatgpt_instance = openai_utils.ChatGPT(model=current_model, custom_mode_long_dialogs_config=config.custom_mode_long_dialogs_config)
             if config.enable_message_streaming:
-                gen = chatgpt_instance.send_message_stream(_message, dialog_messages=dialog_messages, chat_mode=chat_mode)
+                gen = chatgpt_instance.send_message_stream(_message, dialog_messages=dialog_messages, chat_mode=chat_mode, user_state=states[user_id])
             else:
                 answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed = await chatgpt_instance.send_message(
                     _message,
                     dialog_messages=dialog_messages,
-                    chat_mode=chat_mode
+                    chat_mode=chat_mode,
+                    user_state=states[user_id]
                 )
 
                 async def fake_gen():
@@ -276,13 +284,15 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 prev_answer = answer
 
             # update user data
-            new_dialog_message = {"user": _message, "bot": answer, "date": datetime.now()}
+            new_dialog_message = {"user": _message, "bot": answer, "date": datetime.now(), "n_tokens": n_input_tokens + n_output_tokens}
+            dialog_messages = db.get_dialog_messages(user_id, dialog_id=None) + [new_dialog_message]
             db.set_dialog_messages(
                 user_id,
-                db.get_dialog_messages(user_id, dialog_id=None) + [new_dialog_message],
+                dialog_messages,
                 dialog_id=None
             )
-
+            if len(dialog_messages) == 1:  # First message
+                user_state.prompt_tokens = n_input_tokens
             db.update_n_used_tokens(user_id, current_model, n_input_tokens, n_output_tokens)
 
         except asyncio.CancelledError:

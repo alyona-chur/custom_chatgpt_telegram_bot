@@ -1,4 +1,5 @@
 import config
+import re
 
 import tiktoken
 import openai
@@ -21,13 +22,16 @@ OPENAI_COMPLETION_OPTIONS = {
 
 
 class ChatGPT:
-    def __init__(self, model="gpt-3.5-turbo"):
+    def __init__(self, model="gpt-3.5-turbo", custom_mode_long_dialogs_config=None):
         assert model in {"text-davinci-003", "gpt-3.5-turbo-16k", "gpt-3.5-turbo", "gpt-4"}, f"Unknown model: {model}"
         self.model = model
+        self.custom_mode_long_dialogs_config = custom_mode_long_dialogs_config
 
-    async def send_message(self, message, dialog_messages=[], chat_mode="assistant"):
+    async def send_message(self, message, dialog_messages=[], chat_mode="assistant", user_state=None):
         if chat_mode not in config.chat_modes.keys():
             raise ValueError(f"Chat mode {chat_mode} is not supported")
+        if chat_mode == "custom" and user_state is None:
+            raise ValueError(f"User state must be provided for {chat_mode} mode.")
 
         n_dialog_messages_before = len(dialog_messages)
         answer = None
@@ -65,16 +69,18 @@ class ChatGPT:
 
         return answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed
 
-    async def send_message_stream(self, message, dialog_messages=[], chat_mode="assistant"):
+    async def send_message_stream(self, message, dialog_messages=[], chat_mode="assistant", user_state=None):
         if chat_mode not in config.chat_modes.keys():
             raise ValueError(f"Chat mode {chat_mode} is not supported")
+        if chat_mode == "custom" and user_state is None:
+            raise ValueError(f"User state must be provided for {chat_mode} mode.")
 
         n_dialog_messages_before = len(dialog_messages)
         answer = None
         while answer is None:
             try:
                 if self.model in {"gpt-3.5-turbo-16k", "gpt-3.5-turbo", "gpt-4"}:
-                    messages = self._generate_prompt_messages(message, dialog_messages, chat_mode)
+                    messages = self._generate_prompt_messages(message, dialog_messages, chat_mode, user_state)
                     r_gen = await openai.ChatCompletion.acreate(
                         model=self.model,
                         messages=messages,
@@ -91,7 +97,7 @@ class ChatGPT:
                             n_first_dialog_messages_removed = n_dialog_messages_before - len(dialog_messages)
                             yield "not_finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed
                 elif self.model == "text-davinci-003":
-                    prompt = self._generate_prompt(message, dialog_messages, chat_mode)
+                    prompt = self._generate_prompt(message, dialog_messages, chat_mode, user_state)
                     r_gen = await openai.Completion.acreate(
                         engine=self.model,
                         prompt=prompt,
@@ -117,7 +123,7 @@ class ChatGPT:
 
         yield "finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed  # sending final answer
 
-    def _generate_prompt(self, message, dialog_messages, chat_mode):
+    def _generate_prompt(self, message, dialog_messages, chat_mode, user_state):
         prompt = config.chat_modes[chat_mode]["prompt_start"]
         prompt += "\n\n"
 
@@ -134,8 +140,53 @@ class ChatGPT:
 
         return prompt
 
-    def _generate_prompt_messages(self, message, dialog_messages, chat_mode):
+    def _generate_prompt_messages(self, message, dialog_messages, chat_mode, user_state):
         prompt = config.chat_modes[chat_mode]["prompt_start"]
+
+        if chat_mode == "custom":
+            if not dialog_messages:
+                user_state.set(*parse_custom_settings(message), self.model)
+                tiktoken
+
+            if self.custom_mode_long_dialogs_config is not None and not self.custom_mode_long_dialogs_config.enable:
+                messages = [{"role": "system", "content": user_state.system_message}]
+                for dm_i in range(1, len(dialog_messages)):
+                    dialog_message = dialog_messages[dm_i]
+                    messages.append({"role": "user", "content": dialog_message["user"]})
+                    messages.append({"role": "assistant", "content": dialog_message["bot"]})
+                messages.append({"role": "user", "content": message})
+                return message
+
+            # Long dialog
+            encoding = tiktoken.encoding_for_model(self.model)
+            n_tokens, message_n_tokens = user_state.system_message_n_tokens, len(encoding.encode(message))
+            messages = []
+            for dm_i in range(len(dialog_messages) - 1, 1, -1):
+                dialog_message = dialog_messages[dm_i]
+                if (
+                    n_tokens + dialog_message["n_tokens"] + user_state.summary_message_n_tokens
+                    >= self.custom_mode_long_dialogs_config.update_summary_when_tokens_reached
+                ):
+                    messages.append({"role": "system", "content": user_state.system_message})
+                    messages.reverse()
+                    messages.append({"role": "user", "content": user_state.summary_message})
+
+                    return messages
+                if (
+                    n_tokens + dialog_message["n_tokens"] + message_n_tokens
+                    >= self.custom_mode_long_dialogs_config.max_tokens
+                ):
+                    break
+
+                messages.append({"role": "user", "content": dialog_message["user"]})
+                messages.append({"role": "assistant", "content": dialog_message["bot"]})
+                n_tokens += dialog_message["n_tokens"]
+
+            messages.append({"role": "system", "content": user_state.system_message})
+            messages.reverse()
+            messages.append({"role": "user", "content": message})
+
+            return messages
 
         messages = [{"role": "system", "content": prompt}]
         for dialog_message in dialog_messages:
@@ -203,3 +254,19 @@ async def generate_images(prompt, n_images=4):
 async def is_content_acceptable(prompt):
     r = await openai.Moderation.acreate(input=prompt)
     return not all(r.results[0].categories.values())
+
+
+def parse_custom_settings(message):
+    prompt_pattern = r'PROMPT:\s*([\s\S]*?)(?:PREV:|SUMMARY_FORMAT:|$)'
+    prev_pattern = r'PREV:\s*([\s\S]*?)(?:SUMMARY_FORMAT:|$)'
+    summary_format_pattern = r'SUMMARY_FORMAT:\s*([\s\S]*)$'
+
+    prompt_match = re.search(prompt_pattern, message)
+    prev_match = re.search(prev_pattern, message)
+    summary_format_match = re.search(summary_format_pattern, message)
+
+    prompt = prompt_match.group(1).strip() if prompt_match else None
+    prev = prev_match.group(1).strip() if prev_match else None
+    summary_format = summary_format_match.group(1).strip() if summary_format_match else None
+
+    return prompt, prev, summary_format

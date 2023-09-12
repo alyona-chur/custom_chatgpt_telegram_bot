@@ -1,3 +1,15 @@
+custom:
+  name: 🎯 Custom
+  model_type: text
+  welcome_message: |
+    Hi there! 👋😄 I'm here to assist you. Please provide the information using the following format:
+
+    <b>PROMPT:</b> [Enter your system message for ChatGPT here. <i>E.g. You are an advanced chatbot Assistant, your primary goal is to assist users...</i>]
+    <b>PREV:</b> [Provide summaries of previous conversations here. Optional. <i>E.g. Summaries of our previous dialogs:...</i>]
+    <b>SUMMARY_FORMAT:</b> [Specify the format you prefer for requesting summaries. Summarisation will be called periodically to keep the dialog longer. Optional. <i>E.g. Use bullet points. 1. Discussed topics 2. Conclusions 3. What I like and didn't like about your performance...</i>]
+  prompt_start: null
+  parse_mode: html
+
 assistant:
   name: 👩🏼‍🎓 General Assistant
   model_type: text
