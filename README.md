@@ -1,7 +1,10 @@
-# ChatGPT Telegram Bot
+# Knowing ChatGPT Telegram Bot
 
 This repo is ChatGPT re-created as Telegram Bot.
-This fork is aimed at customizing and enhancing the functionality for personal usage. mostly focusing on having long coversations with access to files and knowledge base.
+
+This fork aims to customize and enhance the functionality with a primary focus on engaging in lengthy conversations while providing access to files and a knowledge base.
+
+This may be used to create a personal advisor that is available on all devices through text and voice messages, while maintaining the privacy standards of the Chat GPT API (which are better than in web version).
 
 **Link to Original Repository:** [Original Repository](https://github.com/karfly/chatgpt_telegram_bot)
 
@@ -21,9 +24,20 @@ This fork is aimed at customizing and enhancing the functionality for personal u
 
 ## Added Features
 
-- Custom Mode
-- Long conversations
-- Read knowledge
+- 1 more special chat mode: 🎯 Custom, in which you have the ability to set your own system prompts. This allows for a more personalized and tailored conversation experience.
+- **Long conversations**: Engage in extended and uninterrupted chats with the bot, maintaining context throughout lengthy interactions (for custom mode only)
+- Keywords support: Use _IM keyword to mark a message as important (never to be trimmed), _SM to mark message as system message (add to system prompts), _UPDT to load manual updates from long conversation metadata file (/knowledge/long_dialogs/user_id.yml).
+
+## Coming Features
+
+- **Knowledge retrieval**: Request the bot to access data stored in knowledge files locally
+- Knowledge writing: Ability to add or update information in the knowledge base. Eventually it will allow file processing with Chat GPT.
+- Adjustable ChatGPT parameters such as temperature, max_tokens etc. Currently they can be set in long conversation metadata file.
+- Long conversations supported in all available modes, including custom mode and for the 'text-davinci-003' model
+
+## Long Conversations
+
+The bot ensures limitless conversations by monitoring token usage and trimming earlier messages when the dialogue becomes too long. Periodically, the model is prompted to create or update a summary that remains intact. You can even define your own summary format. Messages marked as system or important messages are never trimmed.
 
 ---
 
@@ -34,6 +48,11 @@ This fork is aimed at customizing and enhancing the functionality for personal u
 - `/balance` – Show balance
 - `/settings` – Show settings
 - `/help` – Show help
+
+## Bot Keywords
+- `_IM` – Add message ti important messages
+- `_SM` – Add message to system messages
+- `_UPDT` – Load update from file
 
 ## Setup
 1. Get your [OpenAI API](https://openai.com/api/) key
