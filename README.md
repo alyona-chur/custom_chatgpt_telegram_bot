@@ -1,6 +1,6 @@
 # Knowing ChatGPT Telegram Bot
 
-Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project is an enhanced version of the [ChatGPT Telegram Bot](https://github.com/karfly/chatgpt_telegram_bot), designed to provide nearly limitless conversation length, as well as access to files and a knowledge base. It's ideal for creating a personal advisor available across all devices through text and voice messages
+Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project is an enhanced version of the [ChatGPT Telegram Bot](https://github.com/karfly/chatgpt_telegram_bot), designed to provide nearly limitless conversation length, as well as access to files and a knowledge base. It's ideal for creating a personal advisor available across all devices through text and voice messages.
 
 ## Original Features
 - Low latency replies (it usually takes about 3-5 seconds)
