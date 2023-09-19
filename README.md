@@ -1,12 +1,6 @@
 # Knowing ChatGPT Telegram Bot
 
-This repo is ChatGPT re-created as Telegram Bot.
-
-This fork aims to customize and enhance the functionality with a primary focus on engaging in lengthy conversations while providing access to files and a knowledge base.
-
-This may be used to create a personal advisor that is available on all devices through text and voice messages, while maintaining the privacy standards of the Chat GPT API (which are better than in web version).
-
-**Link to Original Repository:** [Original Repository](https://github.com/karfly/chatgpt_telegram_bot)
+Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project is an enhanced version of the [ChatGPT Telegram Bot](https://github.com/karfly/chatgpt_telegram_bot), designed to provide nearly limitless conversation length, as well as access to files and a knowledge base. It's ideal for creating a personal advisor available across all devices through text and voice messages
 
 ## Original Features
 - Low latency replies (it usually takes about 3-5 seconds)
@@ -24,20 +18,20 @@ This may be used to create a personal advisor that is available on all devices t
 
 ## Added Features
 
-- 1 more special chat mode: 🎯 Custom, in which you have the ability to set your own system prompts. This allows for a more personalized and tailored conversation experience.
+- 1 more special chat mode: Access 🎯Custom mode to set your own system prompts, offering a personalized conversation experience
 - **Long conversations**: Engage in extended and uninterrupted chats with the bot, maintaining context throughout lengthy interactions (for custom mode only)
 - Keywords support: Use _IM keyword to mark a message as important (never to be trimmed), _SM to mark message as system message (add to system prompts), _UPDT to load manual updates from long conversation metadata file (/knowledge/long_dialogs/user_id.yml).
 
 ## Coming Features
 
-- **Knowledge retrieval**: Request the bot to access data stored in knowledge files locally
-- Knowledge writing: Ability to add or update information in the knowledge base. Eventually it will allow file processing with Chat GPT.
-- Adjustable ChatGPT parameters such as temperature, max_tokens etc. Currently they can be set in long conversation metadata file.
-- Long conversations supported in all available modes, including custom mode and for the 'text-davinci-003' model
+- **Knowledge Retrieval**: Request the bot to access data stored in knowledge files locally.
+- Knowledge Writing: Add or update information in the knowledge base
+- Adjustable ChatGPT Parameters: Customize parameters such as temperature, max_tokens, etc. Currently, these settings can be configured in the long conversation metadata file
+- Long Conversations in All Modes: Extend long conversation support to all available modes and for 'text-davinci-003' model.
 
 ## Long Conversations
 
-The bot ensures limitless conversations by monitoring token usage and trimming earlier messages when the dialogue becomes too long. Periodically, the model is prompted to create or update a summary that remains intact. You can even define your own summary format. Messages marked as system or important messages are never trimmed.
+The bot ensures limitless conversations by monitoring token usage and trimming earlier messages when the dialogue becomes too long. Periodically, the model is prompted to create or update a summary that remains intact. Messages marked as system or important messages are never trimmed.
 
 ---
 
@@ -54,6 +48,8 @@ The bot ensures limitless conversations by monitoring token usage and trimming e
 - `_SM` – Add message to system messages
 - `_UPDT` – Load update from file
 
+---
+
 ## Setup
 1. Get your [OpenAI API](https://openai.com/api/) key
 
@@ -69,3 +65,5 @@ The bot ensures limitless conversations by monitoring token usage and trimming e
     ```bash
     docker-compose --env-file config/config.env up --build
     ```
+
+Feel free to explore, customize, and enjoy extended conversational experiences with the Knowing ChatGPT Telegram Bot!
