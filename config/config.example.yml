@@ -2,12 +2,32 @@ telegram_token: ""
 openai_api_key: ""
 openai_api_base: null  # leave null to use default api base or you can put your own base url here
 allowed_telegram_usernames: []  # if empty, the bot is available to anyone. pass a username string to allow it and/or user ids as positive integers and/or channel ids as negative integers
-new_dialog_timeout: 600  # new dialog starts after timeout (in seconds)
+new_dialog_timeout: 600  # new dialog starts after timeout (in seconds), ignored when long dialog is on
 return_n_generated_images: 1
 n_chat_modes_per_page: 5
 enable_message_streaming: true  # if set, messages will be shown to user word-by-word
 
 # prices
-chatgpt_price_per_1000_tokens: 0.002
-gpt_price_per_1000_tokens: 0.02
-whisper_price_per_1_min: 0.006
+# chatgpt_price_per_1000_tokens: 0.002
+# gpt_price_per_1000_tokens: 0.02
+# whisper_price_per_1_min: 0.006
+
+long_dialog:  # not available for 'text-davinci-003' model, for custom mode only
+  enable: true
+  enable_keywords: true
+
+  # supported methods: "summarisation_method"
+  update_summary_when_tokens_reach: 0.8  # percent of (model token limit - response max tokens)
+  system_and_important_max_tokens: 0.2  # percent of tokens for system + important messages
+
+  # save dialog metadata (system, important, summaries messages etc.) to yml file
+  # when save_to_file is set to true, data is periodically dumped into the file every save_timeout_min minutes
+  # files can be edited manually during runtime. To pull updates from the file, use the _UPD keyword in a message
+  save_to_file: true
+  files_dir: "knowledge/long_dialogs"
+  save_timeout_min: 5
+
+  # save a complete dialog to file
+  # this does not disable MongoDB
+  save_all_to_file: false
+  save_all_timeout_min: 60
