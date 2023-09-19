@@ -33,7 +33,7 @@ from telegram.constants import ParseMode, ChatAction
 import config
 import database
 import openai_utils
-import user_state
+import dialog_keeper
 
 
 # setup
@@ -114,9 +114,8 @@ async def register_user_if_not_exists(update: Update, context: CallbackContext, 
         db.set_user_attribute(user.id, "n_generated_images", 0)
 
     if user.id not in states:
-        states[user.id] = user_state.UserState(user.id)
-    else:
-        states[user.id].clear()
+        states[user.id] = dialog_keeper.DialogKeeper(user.id)
+        states[user.id].start_new_dialog(db.get_user_attribute(user.id, "current_model"), db.get_user_attribute(user.id, "current_chat_mode"))
 
 
 async def is_bot_mentioned(update: Update, context: CallbackContext):
@@ -144,6 +143,7 @@ async def start_handle(update: Update, context: CallbackContext):
 
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
     db.start_new_dialog(user_id)
+    states[user_id].start_new_dialog(db.get_user_attribute(user_id, "current_model"), db.get_user_attribute(user_id, "current_chat_mode"))
 
     reply_text = "Hi! I'm <b>ChatGPT</b> bot implemented with OpenAI API 🤖\n\n"
     reply_text += HELP_MESSAGE
@@ -192,7 +192,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
     user_id = update.message.from_user.id
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
     use_new_dialog_timeout = True \
-        if chat_mode == "custom" and config.custom_mode_long_dialogs_config.enable else use_new_dialog_timeout
+        if chat_mode == "custom" and config.long_dialog_config.enable else use_new_dialog_timeout
 
     # check if bot was mentioned (for group chats)
     if not await is_bot_mentioned(update, context):
@@ -221,6 +221,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
         if use_new_dialog_timeout:
             if (datetime.now() - db.get_user_attribute(user_id, "last_interaction")).seconds > config.new_dialog_timeout and len(db.get_dialog_messages(user_id)) > 0:
                 db.start_new_dialog(user_id)
+                states[user_id].start_new_dialog(db.get_user_attribute(user_id, "current_model"), db.get_user_attribute(user_id, "current_chat_mode"))
                 await update.message.reply_text(f"Starting new dialog due to timeout (<b>{config.chat_modes[chat_mode]['name']}</b> mode) ✅", parse_mode=ParseMode.HTML)
         db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
@@ -245,15 +246,15 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 "markdown": ParseMode.MARKDOWN
             }[config.chat_modes[chat_mode]["parse_mode"]]
 
-            chatgpt_instance = openai_utils.ChatGPT(model=current_model, custom_mode_long_dialogs_config=config.custom_mode_long_dialogs_config)
+            chatgpt_instance = openai_utils.ChatGPT(model=current_model)
             if config.enable_message_streaming:
-                gen = chatgpt_instance.send_message_stream(_message, dialog_messages=dialog_messages, chat_mode=chat_mode, user_state=states[user_id])
+                gen = chatgpt_instance.send_message_stream(_message, dialog_messages=dialog_messages, chat_mode=chat_mode, dialog_keeper=states[user_id])
             else:
                 answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed = await chatgpt_instance.send_message(
                     _message,
                     dialog_messages=dialog_messages,
                     chat_mode=chat_mode,
-                    user_state=states[user_id]
+                    dialog_keeper=states[user_id]
                 )
 
                 async def fake_gen():
@@ -292,7 +293,7 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                 dialog_id=None
             )
             if len(dialog_messages) == 1:  # First message
-                user_state.prompt_tokens = n_input_tokens
+                dialog_keeper.prompt_tokens = n_input_tokens
             db.update_n_used_tokens(user_id, current_model, n_input_tokens, n_output_tokens)
 
         except asyncio.CancelledError:
@@ -419,6 +420,7 @@ async def new_dialog_handle(update: Update, context: CallbackContext):
     db.set_user_attribute(user_id, "last_interaction", datetime.now())
 
     db.start_new_dialog(user_id)
+    states[user_id].start_new_dialog(db.get_user_attribute(user_id, "current_model"), db.get_user_attribute(user_id, "current_chat_mode"))
     await update.message.reply_text("Starting new dialog ✅")
 
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
@@ -519,6 +521,7 @@ async def set_chat_mode_handle(update: Update, context: CallbackContext):
 
     db.set_user_attribute(user_id, "current_chat_mode", chat_mode)
     db.start_new_dialog(user_id)
+    states[user_id].start_new_dialog(db.get_user_attribute(user_id, "current_model"), db.get_user_attribute(user_id, "current_chat_mode"))
 
     await context.bot.send_message(
         update.callback_query.message.chat.id,
@@ -574,6 +577,7 @@ async def set_settings_handle(update: Update, context: CallbackContext):
     _, model_key = query.data.split("|")
     db.set_user_attribute(user_id, "current_model", model_key)
     db.start_new_dialog(user_id)
+    states[user_id].start_new_dialog(db.get_user_attribute(user_id, "current_model"), db.get_user_attribute(user_id, "current_chat_mode"))
 
     text, reply_markup = get_settings_menu(user_id)
     try:
