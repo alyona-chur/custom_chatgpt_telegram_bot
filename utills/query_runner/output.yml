@@ -1,0 +1,9 @@
+choices:
+- 'The average distance from Mars to the Sun is about 141.6 million miles (227.9 million
+  kilometers).
+
+
+  The average distance from the Earth to the Moon is relatively close, at about 238,855
+  miles (384,400 kilometers).'
+model: gpt-4
+token_usage: 193
