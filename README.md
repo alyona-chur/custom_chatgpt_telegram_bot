@@ -23,7 +23,7 @@ Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project
 - Keywords support: Use _IM keyword to mark a message as important (never to be trimmed), _SM to mark message as system message (add to system prompts), _UPDT to load manual updates from long conversation metadata file (/knowledge/long_dialogs/user_id.yml).
 - Long conversation metadata files: Modify prompt, system and important messages on fly.
 
-## Possibly Coming Features
+## Coming Features
 
 - Knowledge Retrieval: Request the bot to access data stored in knowledge files locally.
 - Long Conversations in All Modes: Extend long conversation support to all available modes and for 'text-davinci-003' model.
