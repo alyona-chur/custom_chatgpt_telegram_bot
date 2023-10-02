@@ -26,6 +26,7 @@ TOKEN_LIMIT = {
     "gpt-4": 8192
 }
 
+
 class UserKeywords(Enum):
     # TODO: Make a bot commands.
     UPDATE_FROM_FILE = "_UPDT"
@@ -332,7 +333,9 @@ class DialogKeeper:
 
     def generate_api_options(self, message, dialog_messages):
         self._update_date()
-        keywords = parse_keywords(message) if self._enable_keywords else None
+        keywords, message = parse_keywords(message) if self._enable_keywords else None
+        if not message:  # TODO: Handle empty messages.
+            message = 'Sending an empty message...'
         if keywords is not None and UserKeywords.ADD_TO_SYSTEM_MESSAGES in keywords and UserKeywords.ADD_TO_IMPORTANT_MESSAGES in keywords:
             raise ValueError("Cannot add to both system and important messages.")
         if keywords is not None and UserKeywords.UPDATE_FROM_FILE in keywords:
@@ -352,12 +355,15 @@ class DialogKeeper:
 
         return messages, openai_completion_options
 
+
 def parse_keywords(message):
     keywords = set()
     for keyword in UserKeywords:
         if re.search(re.escape(keyword.value), message):
             keywords.add(keyword)
-    return keywords
+            message.replace(keyword.value, '')
+    return message, keywords
+
 
 def parse_custom_settings(message):
     prompt_pattern = r'PROMPT:\s*([\s\S]*?)(?:PREV:|SUMMARY_FORMAT:|$)'
