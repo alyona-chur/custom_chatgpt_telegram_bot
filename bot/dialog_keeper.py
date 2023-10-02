@@ -26,6 +26,7 @@ TOKEN_LIMIT = {
     "gpt-4": 8192
 }
 
+
 class UserKeywords(Enum):
     # TODO: Make a bot commands.
     UPDATE_FROM_FILE = "_UPDT"
@@ -169,8 +170,8 @@ class DialogKeeper:
                     "max_tokens": self._max_tokens,
                     "frequency_penalty": self._frequency_penalty,
                     "presence_penalty": self._presence_penalty,
-                    "system_messages": self._system_messages,
-                    "important_messages": self._important_messages,
+                    "system_messages": [message["content"] for message in self._system_messages],
+                    "important_messages": [message["content"] for message in self._important_messages],
                     "request_summary_message": self._request_summary_message
                 }, yaml_file, default_flow_style=False, sort_keys=False)
             self._last_metadata_save_datetime = now_time
@@ -182,7 +183,7 @@ class DialogKeeper:
             dialog = []
             if self._complete_data_file_path.is_file():
                 with open(self._complete_data_file_path, 'r') as yaml_file:
-                    dialog = yaml.safe_load(yaml_file)
+                    dialog = yaml.safe_load(yaml_file)["dialog"]
 
             dialog += self._unsaved_dialog
             with open(self._complete_data_file_path, 'w') as yaml_file:
@@ -254,7 +255,7 @@ class DialogKeeper:
         self._important_messages = []
         self._important_messages_n_tokens = 0
 
-        self._request_summary_message = None
+        self._request_summary_message = ""
         self._request_summary_message_n_tokens = 0
         self._n_tokens_since_summary_request = 0
 
@@ -264,7 +265,7 @@ class DialogKeeper:
 
         # summary request
         is_user_message_used = True
-        self._n_tokens_since_summary_request += dialog_messages[-1]["n_tokens"]
+        self._n_tokens_since_summary_request += dialog_messages[-1]["n_tokens"] if dialog_messages else 0
         if self._n_tokens_since_summary_request >= self._long_dialog_update_summary_n_tokens:
             self._n_tokens_since_summary_request = 0
             is_user_message_used = False  # TODO: Add the current summary to system message
@@ -279,7 +280,7 @@ class DialogKeeper:
                 is_user_message_used
                 and (n_tokens + dialog_message["n_tokens"] + message_n_tokens >= self._long_dialog_token_limit)
                 or not is_user_message_used
-                and (n_tokens + dialog_message["n_tokens"] + self._summary_message_n_tokens >= self._long_dialog_token_limit)
+                and (n_tokens + dialog_message["n_tokens"] + self._request_summary_message_n_tokens >= self._long_dialog_token_limit)
             ):
                 break
 
@@ -332,7 +333,9 @@ class DialogKeeper:
 
     def generate_api_options(self, message, dialog_messages):
         self._update_date()
-        keywords = parse_keywords(message) if self._enable_keywords else None
+        keywords, message = parse_keywords(message) if self._enable_keywords else None
+        if not message:  # TODO: Handle empty messages.
+            message = 'Sending an empty message...'
         if keywords is not None and UserKeywords.ADD_TO_SYSTEM_MESSAGES in keywords and UserKeywords.ADD_TO_IMPORTANT_MESSAGES in keywords:
             raise ValueError("Cannot add to both system and important messages.")
         if keywords is not None and UserKeywords.UPDATE_FROM_FILE in keywords:
@@ -352,12 +355,15 @@ class DialogKeeper:
 
         return messages, openai_completion_options
 
+
 def parse_keywords(message):
     keywords = set()
     for keyword in UserKeywords:
         if re.search(re.escape(keyword.value), message):
             keywords.add(keyword)
-    return keywords
+            message.replace(keyword.value, '')
+    return message, keywords
+
 
 def parse_custom_settings(message):
     prompt_pattern = r'PROMPT:\s*([\s\S]*?)(?:PREV:|SUMMARY_FORMAT:|$)'

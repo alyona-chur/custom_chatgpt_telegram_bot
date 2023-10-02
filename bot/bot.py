@@ -191,7 +191,7 @@ async def retry_handle(update: Update, context: CallbackContext):
 async def message_handle(update: Update, context: CallbackContext, message=None, use_new_dialog_timeout=True):
     user_id = update.message.from_user.id
     chat_mode = db.get_user_attribute(user_id, "current_chat_mode")
-    use_new_dialog_timeout = True \
+    use_new_dialog_timeout = False \
         if chat_mode == "custom" and config.long_dialog_config.enable else use_new_dialog_timeout
 
     # check if bot was mentioned (for group chats)
@@ -261,7 +261,6 @@ async def message_handle(update: Update, context: CallbackContext, message=None,
                     yield "finished", answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed
 
                 gen = fake_gen()
-
             prev_answer = ""
             async for gen_item in gen:
                 status, answer, (n_input_tokens, n_output_tokens), n_first_dialog_messages_removed = gen_item

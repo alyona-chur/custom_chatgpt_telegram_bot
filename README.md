@@ -1,6 +1,6 @@
 # Knowing ChatGPT Telegram Bot
 
-Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project is an enhanced version of the [ChatGPT Telegram Bot](https://github.com/karfly/chatgpt_telegram_bot), designed to provide nearly limitless conversation length, as well as access to files and a knowledge base. It's ideal for creating a personal advisor available across all devices through text and voice messages.
+Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project is an enhanced version of the [ChatGPT Telegram Bot](https://github.com/karfly/chatgpt_telegram_bot), designed to provide nearly limitless conversation length.
 
 ## Original Features
 - Low latency replies (it usually takes about 3-5 seconds)
@@ -21,12 +21,11 @@ Welcome to the README for the Knowing ChatGPT Telegram Bot project! This project
 - 1 more special chat mode: Access 🎯Custom mode to set your own system prompts, offering a personalized conversation experience
 - **Long conversations**: Engage in extended and uninterrupted chats with the bot, maintaining context throughout lengthy interactions (for custom mode only)
 - Keywords support: Use _IM keyword to mark a message as important (never to be trimmed), _SM to mark message as system message (add to system prompts), _UPDT to load manual updates from long conversation metadata file (/knowledge/long_dialogs/user_id.yml).
+- Long conversation metadata files: Modify prompt, system and important messages on fly.
 
 ## Coming Features
 
-- **Knowledge Retrieval**: Request the bot to access data stored in knowledge files locally.
-- Knowledge Writing: Add or update information in the knowledge base
-- Adjustable ChatGPT Parameters: Customize parameters such as temperature, max_tokens, etc. Currently, these settings can be configured in the long conversation metadata file
+- Knowledge Retrieval: Request the bot to access data stored in knowledge files locally.
 - Long Conversations in All Modes: Extend long conversation support to all available modes and for 'text-davinci-003' model.
 
 ## Long Conversations
